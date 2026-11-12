@@ -158,12 +158,12 @@ def prepare(archive=None):
     print('Verifying the archive and original LK…', flush=True)
     stock = extract_stock(archive)
     secret = secrets.token_hex(16)
-    private_write(WORK / 'auth/patch-secret.txt', secret)
     patched = WORK / 'unlock-lk.img'
     run([RUNTIME / 'venv/bin/python', PATCHER / 'lk_auto_patch.py', stock, '-o', patched,
          '--analysis-dir', WORK / 'analysis', '--preset', 'unlock-serial', '--key-token-secret', secret],
         receipt='patch.txt', redact=[secret], timeout=300)
     verify_all(patched)
+    private_write(WORK / 'auth/patch-secret.txt', secret)
     private_write(WORK / 'prepared.json', json.dumps({'archive': str(archive), 'patch_sha256': sha256(patched)}))
     print('Preparation passed. No phone was changed. Run: python3 tools/razr2024/unlock.py unlock')
 

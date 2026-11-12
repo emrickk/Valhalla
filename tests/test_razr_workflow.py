@@ -53,6 +53,21 @@ class IdentityTests(unittest.TestCase):
         self.assertNotIn('#!', result)
         self.assertIn('export {loadState', result)
 
+    def test_failed_repreparation_does_not_replace_last_patch_secret(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'venv/bin').mkdir(parents=True)
+            (root / 'venv/bin/python').touch()
+            (root / 'auth').mkdir()
+            secret = root / 'auth/patch-secret.txt'
+            secret.write_text('previous-fixture-secret')
+            with patch.object(workflow, 'RUNTIME', root), patch.object(workflow, 'WORK', root), \
+                 patch.object(workflow, 'extract_stock', return_value=root / 'stock-lk.img'), \
+                 patch.object(workflow, 'run', side_effect=RuntimeError('Patcher failed')):
+                with self.assertRaises(RuntimeError):
+                    workflow.prepare(root / 'fixture.zip')
+            self.assertEqual(secret.read_text(), 'previous-fixture-secret')
+
 
 class UnlockFlowTests(unittest.TestCase):
     def setUp(self):
