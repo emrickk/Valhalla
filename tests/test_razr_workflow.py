@@ -56,8 +56,9 @@ class IdentityTests(unittest.TestCase):
     def test_failed_repreparation_does_not_replace_last_patch_secret(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'venv/bin').mkdir(parents=True)
-            (root / 'venv/bin/python').touch()
+            interpreter = root / 'venv' / ('Scripts/python.exe' if workflow.os.name == 'nt' else 'bin/python')
+            interpreter.parent.mkdir(parents=True)
+            interpreter.touch()
             (root / 'auth').mkdir()
             secret = root / 'auth/patch-secret.txt'
             secret.write_text('previous-fixture-secret')

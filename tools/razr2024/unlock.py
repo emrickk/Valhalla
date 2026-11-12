@@ -2,14 +2,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Exact-build Razr workflow. Preparation is offline; unlock requires physical consent."""
 import argparse
-import fcntl
+from contextlib import contextmanager
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import secrets
-import shutil
 import subprocess
 import sys
 import time
@@ -21,6 +20,27 @@ WORK = ROOT / '.razr-work'
 RUNTIME = ROOT / '.razr-runtime'
 PROFILE = json.loads((Path(__file__).parent / 'profile.json').read_text())
 PATCHER = ROOT / 'val-protocol'
+
+
+def runtime_python():
+    return RUNTIME / 'venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+
+
+@contextmanager
+def operation_lock():
+    (WORK / 'auth').mkdir(parents=True, exist_ok=True, mode=0o700)
+    (WORK / 'auth').chmod(0o700)
+    with (WORK / 'operation.lock').open('a+b') as lock:
+        if os.name == 'nt':
+            import msvcrt
+            lock.write(b'0')
+            lock.flush()
+            lock.seek(0)
+            msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield
 
 
 def sha256(path):
@@ -102,7 +122,7 @@ def wait_fastboot(serial, seconds=90):
 
 
 def verify_all(path):
-    output = run([RUNTIME / 'venv/bin/python', PATCHER / 'tools/verify_mtk_image.py', path, '--all'],
+    output = run([runtime_python(), PATCHER / 'tools/verify_mtk_image.py', path, '--all'],
                  receipt='image-verification.txt')
     if output.count('Result: VALID') != 5 or 'INVALID' in output:
         raise RuntimeError('All five signed subimages must verify.')
@@ -135,31 +155,41 @@ def obtain_archive():
     try:
         run(command)
     except RuntimeError:
-        if sys.platform != 'darwin':
-            raise RuntimeError('Supply --firmware-zip or authenticate using the documented Mac helper.')
-        subprocess.run(['open', str(RUNTIME / 'MFD Login.app')], check=True)
-        input('In MFD Login, click Start fresh login and finish sign-in in your default browser.\n'
-              'Wait for "Login successful", then press Enter here: ')
+        if sys.platform == 'darwin':
+            subprocess.run(['open', str(RUNTIME / 'MFD Login.app')], check=True)
+            input('In MFD Login, click Start fresh login and finish sign-in in your default browser.\n'
+                  'Wait for "Login successful", then press Enter here: ')
+        else:
+            print('Sign in through the pinned downloader. Follow its browser/callback instructions.\n'
+                  'Keep all login URLs and tokens private. See docs/getting-started.md for the local-ZIP alternative.')
+            subprocess.run([node, str(RUNTIME / 'mfd/mfd-cli.mjs'), 'login'], check=True)
         run(command)
     result = json.loads(lookup.read_text())
     print('Downloading the exact stock package (8.22 GB). Keep it for recovery.', flush=True)
     partial = archive.with_suffix('.zip.part')
     with urllib.request.urlopen(result['url'], timeout=60) as response, partial.open('wb') as target:
-        shutil.copyfileobj(response, target, length=1024 * 1024)
+        total = 0
+        next_update = 256 * 1024 * 1024
+        while chunk := response.read(4 * 1024 * 1024):
+            target.write(chunk)
+            total += len(chunk)
+            if total >= next_update:
+                print(f'  Downloaded {total / 1_000_000_000:.2f} GB / about 8.22 GB', flush=True)
+                next_update += 256 * 1024 * 1024
     partial.replace(archive)
     lookup.unlink(missing_ok=True)
     return archive
 
 
 def prepare(archive=None):
-    if not (RUNTIME / 'venv/bin/python').exists():
+    if not runtime_python().exists():
         raise RuntimeError('Run python3 tools/razr2024/setup.py first.')
     archive = Path(archive).resolve() if archive else obtain_archive()
     print('Verifying the archive and original LK…', flush=True)
     stock = extract_stock(archive)
     secret = secrets.token_hex(16)
     patched = WORK / 'unlock-lk.img'
-    run([RUNTIME / 'venv/bin/python', PATCHER / 'lk_auto_patch.py', stock, '-o', patched,
+    run([runtime_python(), PATCHER / 'lk_auto_patch.py', stock, '-o', patched,
          '--analysis-dir', WORK / 'analysis', '--preset', 'unlock-serial', '--key-token-secret', secret],
         receipt='patch.txt', redact=[secret], timeout=300)
     verify_all(patched)
@@ -221,7 +251,7 @@ def unlock(serial=None):
     wait_fastboot(serial)
     inspect(serial)
     secret = (WORK / 'auth/patch-secret.txt').read_text().strip()
-    output = run([RUNTIME / 'venv/bin/python', PATCHER / 'lk_keygen.py', '--secret', secret,
+    output = run([runtime_python(), PATCHER / 'lk_keygen.py', '--secret', secret,
                   '--serialno', serial, '--count', '1'], redact=[secret])
     key = output.strip().splitlines()[-1].strip()
     if not re.fullmatch(r'[A-Za-z0-9]{20}', key):
@@ -258,10 +288,7 @@ def main():
     commands.add_parser('unlock').add_argument('--serial')
     commands.add_parser('restore-stock').add_argument('--serial')
     args = parser.parse_args()
-    (WORK / 'auth').mkdir(parents=True, exist_ok=True, mode=0o700)
-    (WORK / 'auth').chmod(0o700)
-    with (WORK / 'operation.lock').open('w') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    with operation_lock():
         if args.command == 'prepare':
             prepare(args.firmware_zip)
         elif args.command == 'unlock':
@@ -274,7 +301,7 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (RuntimeError, OSError, ValueError, subprocess.TimeoutExpired, KeyboardInterrupt, EOFError) as error:
+    except (RuntimeError, OSError, ValueError, subprocess.SubprocessError, KeyboardInterrupt, EOFError) as error:
         print('Stopped:', str(error) if not isinstance(error, subprocess.TimeoutExpired) else 'Command timed out.', file=sys.stderr)
         print('Keep .razr-work intact. If LK was flashed and the phone is in Fastboot, use restore-stock.\n'
               'If the phone is not detected, follow the recovery notes; do not repeat blind writes.', file=sys.stderr)

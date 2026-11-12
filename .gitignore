@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .razr-runtime/
 .razr-work/
+.clean-phone/
 *.img
 *.bin
 *.zip

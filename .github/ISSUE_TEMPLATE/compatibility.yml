@@ -1,0 +1,30 @@
+name: Request a verified device profile
+description: Share model/build facts without private device identifiers.
+title: "[Compatibility] Model / build"
+body:
+  - type: markdown
+    attributes:
+      value: "A chipset match is not enough to unlock safely. Do not attach firmware, raw logs, serials, IMEIs, tokens, keys, .razr-work or .clean-phone. A request does not mean the device is supported."
+  - type: input
+    id: model
+    attributes:
+      label: Motorola model and SKU
+      placeholder: "e.g. XT2453V (no serial or IMEI)"
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Android version and exact build number
+    validations:
+      required: true
+  - type: input
+    id: chipset
+    attributes:
+      label: MediaTek platform, carrier, and computer OS
+      placeholder: "e.g. mt6878 / Tracfone / Windows 11"
+  - type: textarea
+    id: context
+    attributes:
+      label: What you tried and what you need
+      description: "Describe it in your own words. Review any copied text for private IDs first. Do not try another profile's image."

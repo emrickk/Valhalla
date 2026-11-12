@@ -27,12 +27,17 @@ def library_source(source):
 
 
 def main():
-    if sys.platform != 'darwin':
-        raise SystemExit('Automated setup currently supports macOS. See the offline instructions for other hosts.')
-    required = ['git', 'node', 'adb', 'fastboot', 'xcrun']
+    if sys.version_info < (3, 11):
+        raise SystemExit('Python 3.11 or newer is required.')
+    required = ['git', 'node', 'adb', 'fastboot']
+    if sys.platform == 'darwin':
+        required.append('xcrun')
     missing = [name for name in required if not shutil.which(name)]
     if missing:
         raise SystemExit('Install the prerequisites first: ' + ', '.join(missing))
+    node_version = subprocess.check_output(['node', '--version'], text=True).strip()
+    if int(node_version.lstrip('v').split('.')[0]) < 22:
+        raise SystemExit('Node.js 22 or newer is required for the pinned firmware client.')
     RUNTIME.mkdir(exist_ok=True)
     auth = ROOT / '.razr-work/auth'
     auth.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -46,14 +51,17 @@ def main():
     revision = subprocess.check_output(['git', '-C', str(dependency), 'rev-parse', 'HEAD'], text=True).strip()
     if revision != profile['mfd_revision']:
         raise SystemExit('Existing runtime uses a different MFD revision; move it aside and rerun setup.')
-    original = subprocess.check_output(['git', '-C', str(dependency), 'show', 'HEAD:mfd-cli.mjs'], text=True)
-    (dependency / 'mfd-cli.mjs').write_text(library_source(original))
+    original = subprocess.check_output(['git', '-C', str(dependency), 'show', 'HEAD:mfd-cli.mjs'], text=True, encoding='utf-8')
+    (dependency / 'mfd-cli.mjs').write_text(library_source(original), encoding='utf-8')
     env = RUNTIME / 'venv'
     venv.EnvBuilder(with_pip=True).create(env)
-    python = env / 'bin/python'
+    python = env / ('Scripts/python.exe' if sys.platform == 'win32' else 'bin/python')
     subprocess.run([str(python), '-m', 'pip', 'install', 'capstone==5.0.9', 'pyasn1==0.6.5'], check=True)
     node = shutil.which('node')
     (RUNTIME / 'config.json').write_text(json.dumps({'node': node}))
+    if sys.platform != 'darwin':
+        print('Setup complete. The guided launcher can now prepare the exact firmware.')
+        return
     app = RUNTIME / 'MFD Login.app'
     executable = app / 'Contents/MacOS/MFDLogin'
     executable.parent.mkdir(parents=True, exist_ok=True)

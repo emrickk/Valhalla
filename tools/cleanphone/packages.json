@@ -1,0 +1,8 @@
+[
+  {"id":"com.dti.tracfone","name":"Tracfone app installer","effect":"Stops this sponsored-app installer. Existing apps stay installed.","group":"carrier"},
+  {"id":"com.dti.motorola","name":"Mobile Services Manager","effect":"Stops this app installation and recommendation service.","group":"carrier"},
+  {"id":"com.aura.oobe.motorola","name":"MotoApps recommendations","effect":"Stops this advertising and app recommendation component.","group":"carrier"},
+  {"id":"com.facebook.appmanager","name":"Meta App Manager","effect":"Disables this background Meta update helper; skip if you rely on it.","group":"optional"},
+  {"id":"com.facebook.services","name":"Meta Services","effect":"Disables this background Meta integration; related Facebook features may change.","group":"optional"},
+  {"id":"com.facebook.system","name":"Meta App Installer","effect":"Disables this Meta installation helper. The Facebook app itself is left installed.","group":"optional"}
+]
