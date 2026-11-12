@@ -18,7 +18,8 @@ def parse_callback(uri, armed_at, now):
     values = [v for k, vs in params.items()
               if k.lower() in {'authorization', 'auth', 'token'} for v in vs]
     if not (
-        0 <= now - armed_at <= 600
+        # Filesystem timestamps can round slightly ahead of the process clock.
+        -1 <= now - armed_at <= 600
         and len(uri) <= 16384
         and parsed.scheme.lower() == 'softwarefix'
         and parsed.netloc.lower() in {'callback', 'authcallback'}

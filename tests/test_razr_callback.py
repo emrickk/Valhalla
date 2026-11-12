@@ -33,6 +33,12 @@ class CallbackTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             callback.parse_callback('softwarefix://callback?Authorization=x', 100, 701)
 
+    def test_bounded_filesystem_clock_tolerance(self):
+        uri = 'softwarefix://callback?Authorization=x'
+        self.assertEqual(callback.parse_callback(uri, 100.005, 100), uri)
+        with self.assertRaises(ValueError):
+            callback.parse_callback(uri, 102, 100)
+
     def test_normalized_server_error(self):
         for error in ['oauth2%2520state%2520not%2520found', 'oauth2+state+not+found.']:
             with self.assertRaisesRegex(ValueError, 'oauth2 state not found'):
