@@ -1,0 +1,15 @@
+{
+  "model": "XT2453V",
+  "product": "aito",
+  "build": "W1UCS36H.96-35-12-5",
+  "bootloader": "MBM-3.1-aito-4fb16a-W1UCS36H.96-35-12-5-77c53",
+  "fingerprint": "motorola/aito_g_sysu/aito:16/W1UCS36H.96-35-12-5/77c53-50ad4df:user/release-keys",
+  "carrier": "tracfone",
+  "sim_count": "Dual",
+  "archive": "AITO_G_SYS_W1UCS36H.96-35-12-5_subsidy-TRAC_VISIBLE_RSU_regulatory-DEFAULT_cid51_CFC.xml.zip",
+  "archive_sha256": "3ab304685f72c5d9e6003ac33fec994cc5f68802254f36c77ae9e9a208c76e82",
+  "lk_sha256": "9097c31de4916ffb959894369d67737fec1e98b697d44e0096ce99c1046640ff",
+  "mfd_revision": "b5ea93abf5bc02ee56f5f7a9601320b9d80e3396",
+  "valhalla_revision_tested": "9535f793398082e7597bfc5063de4837ae7b471c",
+  "hardware_runs": 1
+}

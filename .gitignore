@@ -1,2 +1,10 @@
 __pycache__/
 *.py[cod]
+.razr-runtime/
+.razr-work/
+*.img
+*.bin
+*.zip
+*.part
+*.app/
+.DS_Store

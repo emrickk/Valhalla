@@ -1,0 +1,5 @@
+The new files in this directory are licensed under GNU AGPL version 3 or later.
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+The full license text is in ../../val-protocol/LICENSE.
+This notice does not relicense the original Valhalla code or external MFD client.

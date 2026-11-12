@@ -4,6 +4,18 @@ Unlock bootloaders and experimentally erase FRP on Motorola MediaTek devices.
 
 WARNING: CAN BRICK YOUR DEVICE! Use at your own risk!
 
+## Exact-build Razr 2024 workflow (macOS)
+
+For **XT2453V / Tracfone–Visible / Android 16 / W1UCS36H.96-35-12-5**, see the
+[guarded workflow and verified hardware result](docs/razr2024-xt2453v.md).
+It includes Lenovo firmware lookup, a native Mac login callback, exact-image
+checks, physical unlock confirmation, and stock-LK restoration for this profile.
+One device was verified; this is not a guarantee for every handset or firmware.
+The automated runner is new and tested with mocked device transitions; do not
+interpret the original successful manual run as a second hardware test of it.
+
+The original general-purpose GUI instructions below remain unchanged.
+
 ---
 
 ## What this is
@@ -35,6 +47,10 @@ No command line hacking. Just run it and click a button.
 - May work on other MediaTek Motorola devices
 
 ### Tested status
+
+- XT2453V Razr 2024 / build W1UCS36H.96-35-12-5: one hardware unlock verified on
+  November 11, 2026; `flashing_unlocked` persisted after restoring the exact stock
+  LK, and the owner confirmed Android setup. [Evidence and limits](docs/razr2024-xt2453v.md).
 
 - Moto G Play 2026 (XT2615V, XT2615-1): bootloader unlock reported working by the project author.
 - Motorola Milan (XT2211DL): bootloader unlock verified on stock Android 12 LK. The original Valhalla FRP run falsely reported success while FRP remained `protected (277)`. A separate, firmware-specific post-unlock experiment subsequently cleared FRP; it is documented in [`docs/milan-xt2211dl-results.md`](docs/milan-xt2211dl-results.md) and is not automatically applied by Valhalla.
